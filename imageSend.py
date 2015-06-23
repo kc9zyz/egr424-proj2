@@ -15,7 +15,7 @@ for file in os.listdir("./"):
                 os.remove(file)
 #Convert the specified input file
 if sys.argv[1] == 'f':
-    ret =call('ffmpeg -i '+sys.argv[2]+' -s 128x96 -r 11.7 -threads 8 -loglevel panic out%05d.pgm')
+    ret =call('ffmpeg -i '+sys.argv[2]+' -s 128x96 -r 17 -threads 8 -loglevel panic out%05d.pgm')
 elif sys.argv[1] == 'c':
     Popen('ffmpeg -f dshow -i video="FaceTime HD Camera (Built-in)" -s 128x96  -loglevel panic -updatefirst 1 out%05d.pgm')
     ret =0

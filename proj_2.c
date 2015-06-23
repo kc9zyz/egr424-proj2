@@ -161,16 +161,16 @@ main(void)
     //Loop forever waiting for an image to complete coming over from the UART
     while(1)
     {
-		//Wait for incoming image
-		 if(pageRecieved)
-         {
-            //Display image received
-            RIT128x96x4ImageDraw(g_queue, 0,0, 128,96);
+		    //Wait for incoming image
+    		 if(pageRecieved)
+             {
+                //Display image received
+                RIT128x96x4ImageDraw(g_queue, 0,0, 128,96);
 
 
-            //Reset pageRecieved to false
-            pageRecieved = false;
-         }
+                //Reset pageRecieved to false
+                pageRecieved = false;
+             }
 
     }
 		//
