@@ -53,10 +53,19 @@
 #include "driverlib/ssi.h"
 
 
+//Prototype functions not needed in API
+void SSIIntClear(unsigned long ulBase, unsigned long ulIntFlags);
+void SSIIntDisable(unsigned long ulBase, unsigned long ulIntFlags);
+unsigned long SSIIntStatus(unsigned long ulBase, tBoolean bMasked);
+
 volatile unsigned char ssiBusy = 1;
 
-
-//SSI handler
+//
+//! Interrupt service routine for the SSI Peripheral.
+//! The hadnler executes every time the SSI TX bufer is empty after data is sent.
+//! This allows an interrup driven busy function that doesn't poll hardware
+//! unless an interrupt has occured.
+//
 void SSIIntHandler(void)
 {
     unsigned long ulStatus;
@@ -321,51 +330,7 @@ SSIDisable(unsigned long ulBase)
     HWREG(ulBase + SSI_O_CR1) &= ~(SSI_CR1_SSE);
 }
 
-//*****************************************************************************
-//
-//! Registers an interrupt handler for the synchronous serial interface.
-//!
-//! \param ulBase specifies the SSI module base address.
-//! \param pfnHandler is a pointer to the function to be called when the
-//! synchronous serial interface interrupt occurs.
-//!
-//! This function registers the handler to be called when an SSI interrupt
-//! occurs.  This function enables the global interrupt in the interrupt
-//! controller; specific SSI interrupts must be enabled via SSIIntEnable().  If
-//! necessary, it is the interrupt handler's responsibility to clear the
-//! interrupt source via SSIIntClear().
-//!
-//! \sa IntRegister() for important information about registering interrupt
-//! handlers.
-//!
-//! \return None.
-//
-//*****************************************************************************
-void
-SSIIntRegister(unsigned long ulBase, void (*pfnHandler)(void))
-{
-    unsigned long ulInt;
 
-    //
-    // Check the arguments.
-    //
-    ASSERT(SSIBaseValid(ulBase));
-
-    //
-    // Determine the interrupt number based on the SSI port.
-    //
-    ulInt = SSIIntNumberGet(ulBase);
-
-    //
-    // Register the interrupt handler, returning an error if an error occurs.
-    //
-    IntRegister(ulInt, pfnHandler);
-
-    //
-    // Enable the synchronous serial interface interrupt.
-    //
-    IntEnable(ulInt);
-}
 
 //*****************************************************************************
 //
@@ -591,96 +556,8 @@ SSIDataPut(unsigned long ulBase, unsigned long ulData)
 
 }
 
-//*****************************************************************************
-//
-//! Puts a data element into the SSI transmit FIFO.
-//!
-//! \param ulBase specifies the SSI module base address.
-//! \param ulData is the data to be transmitted over the SSI interface.
-//!
-//! This function places the supplied data into the transmit FIFO of the
-//! specified SSI module.  If there is no space in the FIFO, then this function
-//! returns a zero.
-//!
-//! This function replaces the original SSIDataNonBlockingPut() API and
-//! performs the same actions.  A macro is provided in <tt>ssi.h</tt> to map
-//! the original API to this API.
-//!
-//! \note The upper 32 - N bits of \e ulData are discarded by the hardware,
-//! where N is the data width as configured by SSIConfigSetExpClk().  For
-//! example, if the interface is configured for 8-bit data width, the upper 24
-//! bits of \e ulData are discarded.
-//!
-//! \return Returns the number of elements written to the SSI transmit FIFO.
-//
-//*****************************************************************************
-long
-SSIDataPutNonBlocking(unsigned long ulBase, unsigned long ulData)
-{
-    //
-    // Check the arguments.
-    //
-    ASSERT(SSIBaseValid(ulBase));
-    ASSERT((ulData & (0xfffffffe << (HWREG(ulBase + SSI_O_CR0) &
-                                     SSI_CR0_DSS_M))) == 0);
 
-    //
-    // Check for space to write.
-    //
-    if(HWREG(ulBase + SSI_O_SR) & SSI_SR_TNF)
-    {
-        HWREG(ulBase + SSI_O_DR) = ulData;
 
-        return(1);
-    }
-    else
-    {
-        return(0);
-    }
-}
-
-//*****************************************************************************
-//
-//! Gets a data element from the SSI receive FIFO.
-//!
-//! \param ulBase specifies the SSI module base address.
-//! \param pulData is a pointer to a storage location for data that was
-//! received over the SSI interface.
-//!
-//! This function gets received data from the receive FIFO of the specified
-//! SSI module and places that data into the location specified by the
-//! \e pulData parameter.  If there is no data available, this function waits
-//! until data is received before returning.
-//!
-//! \note Only the lower N bits of the value written to \e pulData contain
-//! valid data, where N is the data width as configured by
-//! SSIConfigSetExpClk().  For example, if the interface is configured for
-//! 8-bit data width, only the lower 8 bits of the value written to \e pulData
-//! contain valid data.
-//!
-//! \return None.
-//
-//*****************************************************************************
-void
-SSIDataGet(unsigned long ulBase, unsigned long *pulData)
-{
-    //
-    // Check the arguments.
-    //
-    ASSERT(SSIBaseValid(ulBase));
-
-    //
-    // Wait until there is data to be read.
-    //
-    while(!(HWREG(ulBase + SSI_O_SR) & SSI_SR_RNE))
-    {
-    }
-
-    //
-    // Read data from SSI.
-    //
-    *pulData = HWREG(ulBase + SSI_O_DR);
-}
 
 //*****************************************************************************
 //
@@ -730,85 +607,15 @@ SSIDataGetNonBlocking(unsigned long ulBase, unsigned long *pulData)
     }
 }
 
-//*****************************************************************************
-//
-//! Enables SSI DMA operation.
-//!
-//! \param ulBase is the base address of the SSI port.
-//! \param ulDMAFlags is a bit mask of the DMA features to enable.
-//!
-//! This function enables the specified SSI DMA features.  The SSI can be
-//! configured to use DMA for transmit and/or receive data transfers.
-//! The \e ulDMAFlags parameter is the logical OR of any of the following
-//! values:
-//!
-//! - SSI_DMA_RX - enable DMA for receive
-//! - SSI_DMA_TX - enable DMA for transmit
-//!
-//! \note The uDMA controller must also be set up before DMA can be used
-//! with the SSI.
-//!
-//! \return None.
-//
-//*****************************************************************************
-void
-SSIDMAEnable(unsigned long ulBase, unsigned long ulDMAFlags)
-{
-    //
-    // Check the arguments.
-    //
-    ASSERT(SSIBaseValid(ulBase));
-
-    //
-    // Set the requested bits in the SSI DMA control register.
-    //
-    HWREG(ulBase + SSI_O_DMACTL) |= ulDMAFlags;
-}
-
-//*****************************************************************************
-//
-//! Disables SSI DMA operation.
-//!
-//! \param ulBase is the base address of the SSI port.
-//! \param ulDMAFlags is a bit mask of the DMA features to disable.
-//!
-//! This function is used to disable SSI DMA features that were enabled
-//! by SSIDMAEnable().  The specified SSI DMA features are disabled.  The
-//! \e ulDMAFlags parameter is the logical OR of any of the following values:
-//!
-//! - SSI_DMA_RX - disable DMA for receive
-//! - SSI_DMA_TX - disable DMA for transmit
-//!
-//! \return None.
-//
-//*****************************************************************************
-void
-SSIDMADisable(unsigned long ulBase, unsigned long ulDMAFlags)
-{
-    //
-    // Check the arguments.
-    //
-    ASSERT(SSIBaseValid(ulBase));
-
-    //
-    // Clear the requested bits in the SSI DMA control register.
-    //
-    HWREG(ulBase + SSI_O_DMACTL) &= ~ulDMAFlags;
-}
 
 //*****************************************************************************
 //
 //! Determines whether the SSI transmitter is busy or not.
 //!
-//! \param ulBase is the base address of the SSI port.
-//!
-//! This function allows the caller to determine whether all transmitted bytes
-//! have cleared the transmitter hardware.  If \b false is returned, then the
-//! transmit FIFO is empty and all bits of the last transmitted word have left
-//! the hardware shift register.
-//!
-//! \return Returns \b true if the SSI is transmitting or \b false if all
-//! transmissions are complete.
+//! the function kicks off the interrup for the TX buffer, and returns the
+//! Current result. This ensures that the parameter remains updated when data
+//! hasn't been sent in a while. This prevents an error which puts 4 pixels of
+//! garbage before each frame due to a busy check in the configuration portion
 //
 //*****************************************************************************
 tBoolean
@@ -828,73 +635,6 @@ SSIBusy(unsigned long ulBase)
     return(ssiBusy);
 }
 
-//*****************************************************************************
-//
-//! Sets the data clock source for the specified SSI peripheral.
-//!
-//! \param ulBase is the base address of the SSI port.
-//! \param ulSource is the baud clock source for the SSI.
-//!
-//! This function allows the baud clock source for the SSI to be selected.
-//! The possible clock source are the system clock (\b SSI_CLOCK_SYSTEM) or
-//! the precision internal oscillator (\b SSI_CLOCK_PIOSC).
-//!
-//! Changing the baud clock source changes the data rate generated by the
-//! SSI.  Therefore, the data rate should be reconfigured after any change to
-//! the SSI clock source.
-//!
-//! \note The ability to specify the SSI baud clock source varies with the
-//! Stellaris part and SSI in use.  Please consult the data sheet for the part
-//! in use to determine whether this support is available.
-//!
-//! \return None.
-//
-//*****************************************************************************
-void
-SSIClockSourceSet(unsigned long ulBase, unsigned long ulSource)
-{
-    //
-    // Check the arguments.
-    //
-    ASSERT(SSIBaseValid(ulBase));
-    ASSERT((ulSource == SSI_CLOCK_SYSTEM) || (ulSource == SSI_CLOCK_PIOSC));
-
-    //
-    // Set the SSI clock source.
-    //
-    HWREG(ulBase + SSI_O_CC) = ulSource;
-}
-
-//*****************************************************************************
-//
-//! Gets the data clock source for the specified SSI peripheral.
-//!
-//! \param ulBase is the base address of the SSI port.
-//!
-//! This function returns the data clock source for the specified SSI.  The
-//! possible data clock source are the system clock (\b SSI_CLOCK_SYSTEM) or
-//! the precision internal oscillator (\b SSI_CLOCK_PIOSC).
-//!
-//! \note The ability to specify the SSI data clock source varies with the
-//! Stellaris part and SSI in use.  Please consult the data sheet for the part
-//! in use to determine whether this support is available.
-//!
-//! \return None.
-//
-//*****************************************************************************
-unsigned long
-SSIClockSourceGet(unsigned long ulBase)
-{
-    //
-    // Check the arguments.
-    //
-    ASSERT(SSIBaseValid(ulBase));
-
-    //
-    // Return the SSI clock source.
-    //
-    return(HWREG(ulBase + SSI_O_CC));
-}
 
 //*****************************************************************************
 //

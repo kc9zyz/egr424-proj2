@@ -4,23 +4,23 @@
 //
 // Copyright (c) 2005-2013 Texas Instruments Incorporated.  All rights reserved.
 // Software License Agreement
-// 
+//
 //   Redistribution and use in source and binary forms, with or without
 //   modification, are permitted provided that the following conditions
 //   are met:
-// 
+//
 //   Redistributions of source code must retain the above copyright
 //   notice, this list of conditions and the following disclaimer.
-// 
+//
 //   Redistributions in binary form must reproduce the above copyright
 //   notice, this list of conditions and the following disclaimer in the
-//   documentation and/or other materials provided with the  
+//   documentation and/or other materials provided with the
 //   distribution.
-// 
+//
 //   Neither the name of Texas Instruments Incorporated nor the names of
 //   its contributors may be used to endorse or promote products derived
 //   from this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -32,7 +32,7 @@
 // THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
+//
 // This is part of revision 10636 of the Stellaris Peripheral Driver Library.
 //
 //*****************************************************************************
@@ -104,24 +104,14 @@ extern void SSIConfigSetExpClk(unsigned long ulBase, unsigned long ulSSIClk,
                                unsigned long ulProtocol, unsigned long ulMode,
                                unsigned long ulBitRate,
                                unsigned long ulDataWidth);
-extern void SSIDataGet(unsigned long ulBase, unsigned long *pulData);
 extern long SSIDataGetNonBlocking(unsigned long ulBase,
                                   unsigned long *pulData);
 extern void SSIDataPut(unsigned long ulBase, unsigned long ulData);
-extern long SSIDataPutNonBlocking(unsigned long ulBase, unsigned long ulData);
 extern void SSIDisable(unsigned long ulBase);
 extern void SSIEnable(unsigned long ulBase);
-extern void SSIIntClear(unsigned long ulBase, unsigned long ulIntFlags);
-extern void SSIIntDisable(unsigned long ulBase, unsigned long ulIntFlags);
 extern void SSIIntEnable(unsigned long ulBase, unsigned long ulIntFlags);
-extern void SSIIntRegister(unsigned long ulBase, void(*pfnHandler)(void));
-extern unsigned long SSIIntStatus(unsigned long ulBase, tBoolean bMasked);
-extern void SSIIntUnregister(unsigned long ulBase);
-extern void SSIDMAEnable(unsigned long ulBase, unsigned long ulDMAFlags);
-extern void SSIDMADisable(unsigned long ulBase, unsigned long ulDMAFlags);
 extern tBoolean SSIBusy(unsigned long ulBase);
-extern void SSIClockSourceSet(unsigned long ulBase, unsigned long ulSource);
-extern unsigned long SSIClockSourceGet(unsigned long ulBase);
+
 
 //*****************************************************************************
 //

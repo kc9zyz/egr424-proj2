@@ -34,7 +34,7 @@
 #include <stdbool.h>
 #include "my_uart.h"
 #include "my_ssi.h"
-#include "out.h"
+
 
 
 #define QUEUE_LEN 6144
@@ -66,15 +66,6 @@ __error__(char *pcFilename, unsigned long ulLine)
 }
 #endif
 
-int serialAvailable()
-{
-	//TODO get serial status
-	return 0;
-}
-void serialReadImage(uint8_t *image)
-{
-	//TODO read in image from serial
-}
 //*****************************************************************************
 //
 // The UART interrupt handler.
@@ -107,6 +98,7 @@ UARTIntHandler(void)
         queueCount = 0;
     }
 
+		//Detect an entire frame has completed
     if((queueCount >=QUEUE_LEN))
     {
         pageRecieved = true;
@@ -164,11 +156,8 @@ main(void)
     //
     IntEnable(INT_UART0);
     UARTIntEnable(UART0_BASE, UART_INT_RX | UART_INT_RT);
-    // RIT128x96x4ImageDraw(image, 0,0, 128,96);
 
-    //
-    // Finished.
-    //
+    //Loop forever waiting for an image to complete coming over from the UART
     while(1)
     {
 		//Wait for incoming image
@@ -183,5 +172,8 @@ main(void)
          }
 
     }
+		//
+    // Finished.
+    //
 	return 0;
 }
