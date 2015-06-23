@@ -1,10 +1,11 @@
-#
+#Import necessary libraries
 import serial, time, os, sys
 from subprocess import call, Popen
 
 #Set serial baud rate
 baud = 1500000
 flag = 0
+#Initialize number of dropped frames
 dropped = 0
 #Move into the imageConv directory
 os.chdir('./imageConv')
@@ -28,17 +29,18 @@ if ret ==0 :
         try:
                 #Loop until interrupt
                 while 1:
+                        #Check if we are playing a file
                         if sys.argv[1] == 'f':
                             #Run a player to view video output/ play sound if it exists
                             Popen('ffplay -autoexit -loglevel panic '+sys.argv[2])
-                        #Loop through all pnm files in directory
+                        #Loop through all pgm files in directory
                         for file in os.listdir("./"):
                                 if file.endswith(".pgm"):
                                         #Open the file
                                         f = open(file,'rb')
                                         for x in range(0,3):
                                                 f.readline()
-                                        #Send start byte
+                                        #Add start byte to serial array
                                         toWrite+=chr(0xFF)
                                         #Loop though each pixel
                                         for x in range(0,96):
@@ -63,7 +65,7 @@ if ret ==0 :
                                                             break
                                                         #Set pixel B to luminence value
                                                         nibL = int(l)
-                                                        #Combine nibles to form 2 pixel byte
+                                                        #Combine nibles to form two pixel byte
                                                         byte = nibH &0xf0 | (nibL >>4)
                                                         #Remove start byte if it occurs
                                                         if byte ==0xFF:
@@ -97,23 +99,18 @@ if ret ==0 :
                                 toWrite+=chr(0)
                 #Send black screen
                 ser.write(toWrite)
-                #Create black screen
-                for x in range(0,96):
-                        for y in range(0,64):
-                                toWrite+=chr(0)
+
                 #Send black screen
                 ser.write(toWrite)
-                #Create black screen
-                for x in range(0,96):
-                        for y in range(0,64):
-                                toWrite+=chr(0)
+
                 #Send black screen
                 ser.write(toWrite)
 
         #Close the serial connection
         ser.close()
         #Print exit message
-        print('Frames dropped:'+str(dropped))
+        if dropped:
+            print('Frames dropped:'+str(dropped))
         print('Closed -- exit')
 #If the conversion was not successful, exit and print an error
 else:
