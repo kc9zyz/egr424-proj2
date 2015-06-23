@@ -70,6 +70,10 @@ void SSIIntHandler(void)
 {
     unsigned long ulStatus;
 
+    //
+    // Disable the SSI_TXFF interrupt
+    //
+
     SSIIntDisable(SSI0_BASE, SSI_TXFF);
     //
     // Get the interrupt status.

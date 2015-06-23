@@ -1,0 +1,19 @@
+Cover Page
+
+External circuit description
+  circuit diagram
+  working
+  need
+
+Custom functions
+  list them
+  one paragraph description
+
+Extra Credit
+  explain
+
+project folder
+  to be given to parikh in lab
+
+demo
+  questions to each member

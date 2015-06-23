@@ -127,7 +127,8 @@ main(void)
     //
     IntMasterEnable();
 
-
+    // Enable interrupts from SSI0 peripheral
+    //
     IntEnable(INT_SSI0);
     //
     // Initialize the OLED display.
@@ -146,7 +147,7 @@ main(void)
     GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
 
     //
-    // Configure the UART for 115,200, 8-N-1 operation.
+    // Configure the UART for 1,500,000, 8-N-1 operation.
     //
     UARTConfigSetExpClk(UART0_BASE, SysCtlClockGet(),BAUD ,
                         (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
