@@ -38,6 +38,7 @@
 
 
 #define QUEUE_LEN 6144
+#define BAUD 1500000
 
 //Global memory and flags
 uint8_t g_queue[QUEUE_LEN];
@@ -147,7 +148,7 @@ main(void)
     //
     // Configure the UART for 115,200, 8-N-1 operation.
     //
-    UARTConfigSetExpClk(UART0_BASE, SysCtlClockGet(), 1500000,
+    UARTConfigSetExpClk(UART0_BASE, SysCtlClockGet(),BAUD ,
                         (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
                          UART_CONFIG_PAR_NONE));
 
