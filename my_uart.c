@@ -5,8 +5,9 @@
 // This code is borrowed from the Stellaris Peripheral Driver Library
 //
 // The purpose of this driver is to allow the use of the UART peripheral
-// on the LM3S6965. Included functions allow for the initialization and use
-// of the UART peripheral.
+// on the LM3S6965. Included functions allow for initialization,
+// enabling/disabling of the peripheral, and enabling/disabling of
+// interrupt capabilities.
 //*****************************************************************************
 
 //*****************************************************************************

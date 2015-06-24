@@ -1,24 +1,13 @@
 //*****************************************************************************
 //
-// hello.c - Simple hello world example.
+// proj_2.c - Video Player for the LM3S6965 Development Board
 //
-// Copyright (c) 2006-2013 Texas Instruments Incorporated.  All rights reserved.
-// Software License Agreement
-//
-// Texas Instruments (TI) is supplying this software for use solely and
-// exclusively on TI's microcontroller products. The software is owned by
-// TI and/or its suppliers, and is protected under applicable copyright
-// laws. You may not combine this software with "viral" open-source
-// software in order to form a larger program.
-//
-// THIS SOFTWARE IS PROVIDED "AS IS" AND WITH ALL FAULTS.
-// NO WARRANTIES, WHETHER EXPRESS, IMPLIED OR STATUTORY, INCLUDING, BUT
-// NOT LIMITED TO, IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE APPLY TO THIS SOFTWARE. TI SHALL NOT, UNDER ANY
-// CIRCUMSTANCES, BE LIABLE FOR SPECIAL, INCIDENTAL, OR CONSEQUENTIAL
-// DAMAGES, FOR ANY REASON WHATSOEVER.
-//
-// This is part of revision 10636 of the EK-LM3S6965 Firmware Package.
+// The video player for the LM3S6965 Development Board utilizes the
+// UART and SSI peripherals in order to stream video from an attached
+// computer to the 128x96x4 on board OLED screen. UART operates on
+// interrupts generated from receiving video data from the computer and
+// SSI generates interrupts when transission of data to the OLED display
+// is complete. Serial communication over USB is driven at 1.5 Mbit/
 //
 //*****************************************************************************
 
@@ -47,16 +36,6 @@ volatile bool pageRecieved = false;
 
 //*****************************************************************************
 //
-//! \addtogroup example_list
-//! <h1>Hello World (hello)</h1>
-//!
-//! A very simple ``hello world'' example.  It simply displays ``hello world''
-//! on the OLED and is a starting point for more complicated applications.
-//
-//*****************************************************************************
-
-//*****************************************************************************
-//
 // The error routine that is called if the driver library encounters an error.
 //
 //*****************************************************************************
@@ -69,12 +48,16 @@ __error__(char *pcFilename, unsigned long ulLine)
 
 //*****************************************************************************
 //
-// The UART interrupt handler.
+// The UART interrupt handler. Clears the generated interrupt and stores the
+// received data in a queue to be sent to the OLED display
 //
 //*****************************************************************************
 void
 UARTIntHandler(void)
 {
+    //
+    // Variable to hold the interrupt status
+    //
     unsigned long ulStatus;
 
     //
@@ -89,11 +72,12 @@ UARTIntHandler(void)
 
 
     //
-    // Read the next character from the UART and write it back to the UART.
+    // Read the next character from the UART and write it into
+    // g_queue buffer for sending to OLED display
     //
     g_queue[queueCount++] = UARTCharGetNonBlocking(UART0_BASE);
 
-    //Detect start byte
+    //Detect start byte sent from computer
     if(g_queue[queueCount-1] == 0xFF)
     {
         queueCount = 0;
@@ -110,7 +94,9 @@ UARTIntHandler(void)
 
 //*****************************************************************************
 //
-// Print "Hello world!" to the OLED on the Stellaris evaluation board.
+// Initializes UART, SSI, and OLED peripherals. Enables interrupts from UART
+// and from SSI. Waits for a full page of data to be recieived from UART and
+// then sends the page over SSI to the OLED display.
 //
 //*****************************************************************************
 int
@@ -122,24 +108,25 @@ main(void)
     SysCtlClockSet(SYSCTL_SYSDIV_4 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN |
                    SYSCTL_XTAL_8MHZ);
 
-                   //
+    //
     // Enable processor interrupts.
     //
     IntMasterEnable();
 
+    //
     // Enable interrupts from SSI0 peripheral
     //
     IntEnable(INT_SSI0);
+
     //
     // Initialize the OLED display.
     //
     RIT128x96x4Init(1000000);
 
-     //
+    //
     // Enable the UART peripheral
     //
     SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
-
 
     //
     // Set GPIO A0 and A1 as UART pins.
