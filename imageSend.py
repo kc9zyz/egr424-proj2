@@ -8,6 +8,7 @@ flag = 0
 #Initialize number of dropped frames
 dropped = 0
 proc = 0
+comPort='COM9'
 #Move into the imageConv directory
 os.chdir('./imageConv')
 #Delete all existing pnm images
@@ -34,7 +35,7 @@ if ret ==0 :
         #Catch keyboard interrupts
         try:
                 #Start the serial connection
-                ser = serial.Serial('COM9',baud)
+                ser = serial.Serial(comPort,baud)
                 #Blank the write array
                 toWrite = ''
                 #Loop until interrupt
