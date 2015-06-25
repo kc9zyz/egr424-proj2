@@ -7,6 +7,7 @@ baud = 1500000
 flag = 0
 #Initialize number of dropped frames
 dropped = 0
+proc = 0
 #Move into the imageConv directory
 os.chdir('./imageConv')
 #Delete all existing pnm images
@@ -14,19 +15,28 @@ for file in os.listdir("./"):
         if file.endswith(".pgm"):
                 os.remove(file)
 #Convert the specified input file
-if sys.argv[1] == 'f':
-    ret =call('ffmpeg -i '+sys.argv[2]+' -s 128x96 -r 17 -threads 8 -loglevel panic out%05d.pgm')
-elif sys.argv[1] == 'c':
-    Popen('ffmpeg -f dshow -i video="FaceTime HD Camera (Built-in)" -s 128x96  -loglevel panic -updatefirst 1 out%05d.pgm')
-    ret =0
+if len(sys.argv) > 1:
+    if sys.argv[1] == 'f':
+        if len(sys.argv) > 2:
+            ret =call('ffmpeg -i '+sys.argv[2]+' -s 128x96 -r 17 -threads 8 -loglevel panic out%05d.pgm')
+        else:
+            ret = 1
+    elif sys.argv[1] == 'c':
+        proc = Popen('ffmpeg -f dshow -i video="FaceTime HD Camera (Built-in)" -s 128x96  -loglevel panic -updatefirst 1 out%05d.pgm')
+        ret =0
+    else:
+        ret = 1
+else:
+    ret = 1
+
 #Check if the conversion was successful
 if ret ==0 :
-        #Start the serial connection
-        ser = serial.Serial('COM9',baud)
-        #Blank the write array
-        toWrite = ''
         #Catch keyboard interrupts
         try:
+                #Start the serial connection
+                ser = serial.Serial('COM9',baud)
+                #Blank the write array
+                toWrite = ''
                 #Loop until interrupt
                 while 1:
                         #Check if we are playing a file
@@ -87,24 +97,31 @@ if ret ==0 :
                                         f.close()
         #If a keyboard interrupt occurs, handle it
         except KeyboardInterrupt:
-                #Close the open file
-                f.close()
-                #Blank the serial array
-                toWrite = ''
-                #Add start byte
-                toWrite+=chr(0xFF)
-                #Create black screen
-                for x in range(0,96):
-                        for y in range(0,64):
-                                toWrite+=chr(0)
-                #Send black screen
-                ser.write(toWrite)
+            #Close the open file
+            f.close()
+            #Blank the serial array
+            toWrite = ''
+            #Add start byte
+            toWrite+=chr(0xFF)
+            #Create black screen
+            for x in range(0,96):
+                    for y in range(0,64):
+                            toWrite+=chr(0)
+            #Send black screen
+            ser.write(toWrite)
 
-                #Send black screen
-                ser.write(toWrite)
+            #Send black screen
+            ser.write(toWrite)
 
-                #Send black screen
-                ser.write(toWrite)
+            #Send black screen
+            ser.write(toWrite)
+            if proc:
+                proc.kill()
+        except serial.SerialException:
+            # Kill the camera process if it is running
+            if proc:
+                proc.kill()
+            sys.exit('Error: Serial Error. Please check that the board is connected');
 
         #Close the serial connection
         ser.close()
@@ -114,4 +131,6 @@ if ret ==0 :
         print('Closed -- exit')
 #If the conversion was not successful, exit and print an error
 else:
-      print('Input file error')
+    if proc:
+        proc.kill()
+    sys.exit('Error: invalid input provided\nInput is in the form {c,f} [filename]');
