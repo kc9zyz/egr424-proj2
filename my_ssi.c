@@ -1,40 +1,13 @@
 //*****************************************************************************
 //
-// ssi.c - Driver for Synchronous Serial Interface.
+// my_ssi.c - Driver for Synchronous Serial Interface.
 //
-// Copyright (c) 2005-2013 Texas Instruments Incorporated.  All rights reserved.
-// Software License Agreement
+// This code is borrowed from the Stellaris Peripheral Driver Library
 //
-//   Redistribution and use in source and binary forms, with or without
-//   modification, are permitted provided that the following conditions
-//   are met:
-//
-//   Redistributions of source code must retain the above copyright
-//   notice, this list of conditions and the following disclaimer.
-//
-//   Redistributions in binary form must reproduce the above copyright
-//   notice, this list of conditions and the following disclaimer in the
-//   documentation and/or other materials provided with the
-//   distribution.
-//
-//   Neither the name of Texas Instruments Incorporated nor the names of
-//   its contributors may be used to endorse or promote products derived
-//   from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//
-// This is part of revision 10636 of the Stellaris Peripheral Driver Library.
-//
+// The purpose of this driver is to allow the use of the SSI peripheral
+// on the LM3S6965. Included functions allow for initialization,
+// enabling/disabling of the peripheral, and enabling/disabling of
+// interrupt capabilities.
 //*****************************************************************************
 
 //*****************************************************************************
@@ -58,6 +31,7 @@ void SSIIntClear(unsigned long ulBase, unsigned long ulIntFlags);
 void SSIIntDisable(unsigned long ulBase, unsigned long ulIntFlags);
 unsigned long SSIIntStatus(unsigned long ulBase, tBoolean bMasked);
 
+//Global to store the current busy status of the transmitter
 volatile unsigned char ssiBusy = 1;
 
 //
@@ -86,6 +60,10 @@ void SSIIntHandler(void)
     SSIIntClear(SSI0_BASE, ulStatus);
 
 
+    //Gets the current busy value to report when the busy function is called.
+    //By setting this to the current busy value, this solves any problems
+    //that stem from the interrupt firing while the transmitter is still
+    //busy.
     ssiBusy = (HWREG(SSI0_BASE + SSI_O_SR) & SSI_SR_BSY) ? true : false;
 
 }
@@ -334,8 +312,6 @@ SSIDisable(unsigned long ulBase)
     HWREG(ulBase + SSI_O_CR1) &= ~(SSI_CR1_SSE);
 }
 
-
-
 //*****************************************************************************
 //
 //! Unregisters an interrupt handler for the synchronous serial interface.
@@ -560,58 +536,6 @@ SSIDataPut(unsigned long ulBase, unsigned long ulData)
 
 }
 
-
-
-
-//*****************************************************************************
-//
-//! Gets a data element from the SSI receive FIFO.
-//!
-//! \param ulBase specifies the SSI module base address.
-//! \param pulData is a pointer to a storage location for data that was
-//! received over the SSI interface.
-//!
-//! This function gets received data from the receive FIFO of the specified SSI
-//! module and places that data into the location specified by the \e ulData
-//! parameter.  If there is no data in the FIFO, then this function returns a
-//! zero.
-//!
-//! This function replaces the original SSIDataNonBlockingGet() API and
-//! performs the same actions.  A macro is provided in <tt>ssi.h</tt> to map
-//! the original API to this API.
-//!
-//! \note Only the lower N bits of the value written to \e pulData contain
-//! valid data, where N is the data width as configured by
-//! SSIConfigSetExpClk().  For example, if the interface is configured for
-//! 8-bit data width, only the lower 8 bits of the value written to \e pulData
-//! contain valid data.
-//!
-//! \return Returns the number of elements read from the SSI receive FIFO.
-//
-//*****************************************************************************
-long
-SSIDataGetNonBlocking(unsigned long ulBase, unsigned long *pulData)
-{
-    //
-    // Check the arguments.
-    //
-    ASSERT(SSIBaseValid(ulBase));
-
-    //
-    // Check for data to read.
-    //
-    if(HWREG(ulBase + SSI_O_SR) & SSI_SR_RNE)
-    {
-        *pulData = HWREG(ulBase + SSI_O_DR);
-        return(1);
-    }
-    else
-    {
-        return(0);
-    }
-}
-
-
 //*****************************************************************************
 //
 //! Determines whether the SSI transmitter is busy or not.
@@ -630,11 +554,11 @@ SSIBusy(unsigned long ulBase)
     //
     ASSERT(SSIBaseValid(ulBase));
 
-    //Enable the SSI interrupts
+    //Enable the SSI TX interrupt
     SSIIntEnable(SSI0_BASE, SSI_TXFF);
 
     //
-    // Determine if the SSI is busy.
+    // Determine if the SSI is busy by reading the global value.
     //
     return(ssiBusy);
 }
